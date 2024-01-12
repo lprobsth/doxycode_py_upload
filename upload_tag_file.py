@@ -2,15 +2,14 @@
 
 import sys
 import os
+import json
+import requests
 from optparse import OptionParser
-from dokuwikixmlrpc import DokuWikiClient
-import xmlrpc.client as xmlrpclib
 
 def main():
     parser = OptionParser(usage="usage: %prog filename")
-    parser.add_option("-d", "--domain", dest="domain", help="DokuWiki domain URL", default=os.environ.get('DOKUWIKI_DOMAIN'))
-    parser.add_option("-u", "--user", dest="user", help="DokuWiki username", default=os.environ.get('DOKUWIKI_USER'))
-    parser.add_option("-p", "--password", dest="password", help="DokuWiki password", default=os.environ.get('DOKUWIKI_PASSWORD'))
+    parser.add_option("-u", "--url", dest="url", help="DokuWiki JSON API URL", default=os.environ.get('DOKUWIKI_API_URL'))
+    parser.add_option("-t", "--token", dest="token", help="Authorization token", default=os.environ.get('DOKUWIKI_API_TOKEN'))
 
     (options, args) = parser.parse_args()
 
@@ -20,32 +19,49 @@ def main():
 
     filename = args[0]
 
-    # Check if all environment variables are set
-    if not options.domain or not options.user or not options.password:
-        sys.exit("Error: DokuWiki domain, user, or password not set. Please set environment variables.")
+    # Check if API URL and token are set
+    if not options.url or not options.token:
+        sys.exit("Error: DokuWiki API URL or token not set. Please set environment variables.")
 
-    # Initialize the DokuWiki client
-    dw = DokuWikiClient(options.domain, options.user, options.password)
-
+    # Read the file to be uploaded
     try:
-        # Open the file
         with open(filename, "rb") as in_file:
-            data = in_file.read()
+            file_content = in_file.read()
+    except IOError as e:
+        sys.exit(f"Error reading file: {e}")
 
-        # Upload file
-        response = dw._xmlrpc.doxycode.uploadTagFile(filename, xmlrpclib.Binary(data))
+    # Prepare the JSON payload for the API request
+    json_payload = {
+        "jsonrpc": "2.0",
+        "id": "uploadTagFile",
+        "method": "plugin.doxycode.uploadTagFile",
+        "params": [filename, file_content.decode('utf-8')]  # Assuming file_content is utf-8 encoded text
+    }
 
-        # Check response and exit accordingly
-        if response[0]:
-            print("Upload successful.")
-            sys.exit(0)
+    headers = {
+        'Content-Type': 'application/json',
+        'Authorization': f'Bearer {options.token}'
+    }
+
+    # Make the API request
+    try:
+        response = requests.post(options.url, headers=headers, data=json.dumps(json_payload))
+
+        if response.status_code == 200:
+            response_data = response.json()
+            if 'result' in response_data and response_data['result']:
+                print("Upload successful.")
+                sys.exit(0)
+            else:
+                print("Upload failed with response:", response_data)
+                sys.exit(2)
         else:
-            print("Upload failed.")
-            sys.exit(2)
+            print("HTTP error:", response.status_code)
+            sys.exit(3)
 
-    except Exception as e:
-        print(f"An error occurred: {e}")
-        sys.exit(3)
+    except requests.RequestException as e:
+        print(f"Request error: {e}")
+        sys.exit(4)
 
 if __name__ == "__main__":
     main()

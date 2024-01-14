@@ -23,6 +23,12 @@ def main():
     if not options.url or not options.token:
         sys.exit("Error: DokuWiki API URL or token not set. Please set environment variables.")
 
+    # Adjust the URL to include jsonrpc.php if not already present
+    if 'jsonrpc.php' not in options.url:
+        if not options.url.endswith('/'):
+            options.url += '/'
+        options.url += 'lib/exe/jsonrpc.php'
+        
     # Read the file to be uploaded
     try:
         with open(filename, "rb") as in_file:

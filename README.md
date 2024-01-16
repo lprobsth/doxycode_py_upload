@@ -31,3 +31,15 @@ Using environment variables is encouraged since this decreases the probability o
 | DOKUWIKI_API_TOKEN   | -t / --token    | Dokuwiki API token.                                               | JSON RPC |
 | DOKUWIKI_USER        | -n / --username | Dokuwiki username of the remote user.                             | XML RPC  |
 | DOKUWIKI_PASSWORD    | -p / --password | Password of the Dokuwiki user.                                    | XML RPC  |
+
+## Requirements
+
+If the upload should be done through the XML RPC API the dokuwikixmlrpc by Michael Klier (see [kynan/dokuwikixmlrpc](https://github.com/kynan/dokuwikixmlrpc)) is used.
+It can be installed with pip:
+```
+pip install dokuwikixmlrpc
+```
+----
+Copyright (C) Lukas Probsthain <lukas.probsthain@gmail.com>
+
+See LICENSE.txt for license info.
